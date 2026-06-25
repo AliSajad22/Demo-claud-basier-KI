@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge — KI-Plattform Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #0E0F11;
+    color: #F4F1EA;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .page { position: relative; min-height: 100vh; overflow: hidden; }
+  .bg-glow {
+    position: absolute; top: -200px; right: -150px; width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(255,122,51,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header {
+    position: relative; display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 28px; border-bottom: 1px solid #1E2024;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 26px; height: 26px; border-radius: 7px; background: #FF7A33;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+  .brand-tag { font-size: 12px; color: #6B7280; font-family: 'JetBrains Mono', monospace; }
+
+  main { position: relative; max-width: 880px; margin: 0 auto; padding: 40px 24px 24px; }
+
+  .key-bar {
+    background: #16171A; border: 1px solid #2A2D32; border-radius: 12px;
+    padding: 12px 16px; margin-bottom: 28px; display: flex; gap: 10px; align-items: center;
+    flex-wrap: wrap;
+  }
+  .key-bar label { font-size: 12.5px; color: #9CA3AF; white-space: nowrap; }
+  .key-bar input {
+    flex: 1; min-width: 200px; background: #0E0F11; border: 1px solid #2A2D32; border-radius: 7px;
+    padding: 7px 10px; color: #F4F1EA; font-size: 12.5px; font-family: 'JetBrains Mono', monospace;
+  }
+  .key-bar input:focus { outline: none; border-color: #FF7A33; }
+  .key-note { font-size: 11px; color: #5B5F66; width: 100%; margin-top: 2px; }
+
+  h1 { font-size: 32px; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 12px; }
+  h1 .accent { color: #FF7A33; }
+  .subline { color: #9CA3AF; font-size: 14.5px; line-height: 1.6; max-width: 560px; margin: 0 0 24px; }
+
+  .input-card { background: #16171A; border: 1px solid #2A2D32; border-radius: 14px; padding: 16px; }
+  textarea {
+    width: 100%; background: transparent; border: none; color: #F4F1EA; font-size: 15px;
+    font-family: 'Inter', sans-serif; resize: vertical; line-height: 1.5;
+  }
+  textarea:focus { outline: none; }
+  textarea::placeholder { color: #6B7280; }
+
+  .input-footer {
+    display: flex; align-items: center; justify-content: space-between; margin-top: 10px;
+    padding-top: 10px; border-top: 1px solid #232529;
+  }
+  .hint { font-size: 12px; color: #5B5F66; font-family: 'JetBrains Mono', monospace; }
+  .generate-btn {
+    display: flex; align-items: center; gap: 7px; background: #FF7A33; color: #0E0F11;
+    border: none; border-radius: 8px; padding: 9px 16px; font-size: 13.5px; font-weight: 600;
+    font-family: 'Inter', sans-serif; cursor: pointer;
+  }
+  .generate-btn:disabled { opacity: 0.5; cursor: default; }
+
+  .examples-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 16px; }
+  .examples-label { font-size: 12px; color: #5B5F66; margin-right: 2px; }
+  .example-chip {
+    background: #16171A; border: 1px solid #2A2D32; color: #9CA3AF; border-radius: 20px;
+    padding: 6px 12px; font-size: 12.5px; cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .example-chip:hover { border-color: #FF7A33; color: #F4F1EA; }
+
+  .output-section { min-height: 420px; margin-top: 36px; }
+  .empty-state, .loading-state, .error-state {
+    height: 420px; border-radius: 14px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px;
+  }
+  .empty-state { border: 1px dashed #2A2D32; }
+  .empty-text { color: #5B5F66; font-size: 13.5px; }
+
+  .loading-state { border: 1px solid #2A2D32; }
+  .spinner {
+    width: 22px; height: 22px; border: 2px solid rgba(255,122,51,0.25); border-top-color: #FF7A33;
+    border-radius: 50%; animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .log-list { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .log-item { font-family: 'JetBrains Mono', monospace; font-size: 13px; transition: opacity .3s, color .3s; }
+
+  .error-state { border: 1px solid #4A2A2A; background: #1A1213; }
+  .error-title { color: #FF6B6B; font-weight: 600; font-size: 14px; }
+  .error-detail { color: #9CA3AF; font-size: 12.5px; max-width: 420px; text-align: center; }
+  .retry-btn {
+    margin-top: 4px; background: transparent; border: 1px solid #4A2A2A; color: #FF6B6B;
+    border-radius: 8px; padding: 7px 14px; font-size: 12.5px; cursor: pointer;
+  }
+
+  .result-wrap { border: 1px solid #2A2D32; border-radius: 14px; overflow: hidden; }
+  .result-toolbar {
+    display: flex; align-items: center; justify-content: space-between; padding: 10px 14px;
+    background: #16171A; border-bottom: 1px solid #2A2D32;
+  }
+  .toggle-group { display: flex; gap: 4px; background: #0E0F11; border-radius: 8px; padding: 3px; }
+  .toggle-btn {
+    display: flex; align-items: center; gap: 6px; background: transparent; border: none;
+    color: #6B7280; font-size: 12.5px; padding: 6px 10px; border-radius: 6px; cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+  .toggle-btn.active { background: #2A2D32; color: #F4F1EA; }
+
+  .result-frame { background: #fff; max-height: 480px; overflow: auto; }
+  iframe { width: 100%; height: 480px; border: none; display: block; }
+  .device-frame.mobile { width: 360px; margin: 0 auto; }
+  pre.code-block {
+    margin: 0; padding: 18px; background: #0E0F11; color: #9CA3AF;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.6;
+    max-height: 480px; overflow: auto; white-space: pre-wrap; word-break: break-all;
+  }
+
+  footer {
+    position: relative; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+    padding: 16px 28px; border-top: 1px solid #1E2024; font-size: 11.5px; color: #5B5F66;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="bg-glow"></div>
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">⚡</div>
+      <span class="brand-name">Forge</span>
+    </div>
+    <span class="brand-tag">Beschreibung rein. Produkt raus.</span>
+  </header>
+
+  <main>
+    <div class="key-bar">
+      <label for="apiKey">Anthropic API-Key:</label>
+      <input id="apiKey" type="password" placeholder="sk-ant-... (optional — ohne Key läuft eine Beispiel-Generierung)">
+      <span class="key-note">Dein Key bleibt nur in diesem Browser-Tab, wird nirgendwo gespeichert oder gesendet außer direkt an api.anthropic.com.</span>
+    </div>
+
+    <section>
+      <h1>Beschreib dein Produkt.<br><span class="accent">Wir bauen es.</span></h1>
+      <p class="subline">
+        Gib eine Anforderung in normaler Sprache ein — Forge generiert daraus live eine echte, lauffähige Website.
+        Diese Demo zeigt das Web-Prinzip; native Apps laufen über eine zusätzliche Build-Pipeline.
+      </p>
+
+      <div class="input-card">
+        <textarea id="userInput" rows="3" placeholder="z.B. Eine Landingpage für ein Café namens 'Bohne &amp; Zeit' mit Menü-Vorschau…"></textarea>
+        <div class="input-footer">
+          <span class="hint">Strg/Cmd + Enter zum Generieren</span>
+          <button id="generateBtn" class="generate-btn">→ Generieren</button>
+        </div>
+      </div>
+
+      <div class="examples-row">
+        <span class="examples-label">Beispiele:</span>
+        <button class="example-chip" data-text="Eine Landingpage für ein Café namens 'Bohne & Zeit' mit Menü-Vorschau und Öffnungszeiten">Café-Landingpage</button>
+        <button class="example-chip" data-text="Ein Portfolio für eine Fotografin mit Bildergalerie und Kontaktformular">Fotografie-Portfolio</button>
+        <button class="example-chip" data-text="Eine Produktseite für nachhaltige Schuhe mit Preisvergleich und Newsletter-Anmeldung">Produktseite Schuhe</button>
+      </div>
+    </section>
+
+    <section class="output-section">
+      <div id="emptyState" class="empty-state">
+        <div style="font-size:26px;">✨</div>
+        <p class="empty-text">Deine generierte Seite erscheint hier.</p>
+      </div>
+
+      <div id="loadingState" class="loading-state hidden">
+        <div class="spinner"></div>
+        <div class="log-list" id="logList"></div>
+      </div>
+
+      <div id="errorState" class="error-state hidden">
+        <p class="error-title">Generierung fehlgeschlagen</p>
+        <p class="error-detail" id="errorDetail"></p>
+        <button class="retry-btn" id="retryBtn">Erneut versuchen</button>
+      </div>
+
+      <div id="resultWrap" class="result-wrap hidden">
+        <div class="result-toolbar">
+          <div class="toggle-group">
+            <button class="toggle-btn active" id="viewPreviewBtn">👁 Vorschau</button>
+            <button class="toggle-btn" id="viewCodeBtn">{ } Code</button>
+          </div>
+          <div class="toggle-group">
+            <button class="toggle-btn active" id="deviceDesktopBtn">🖥</button>
+            <button class="toggle-btn" id="deviceMobileBtn">📱</button>
+          </div>
+        </div>
+        <div class="result-frame" id="resultFrame">
+          <div class="device-frame" id="deviceFrame">
+            <iframe id="previewFrame" title="Generierte Seite" sandbox="allow-scripts"></iframe>
+          </div>
+          <pre class="code-block hidden" id="codeBlock"><code id="codeContent"></code></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Demo · Web-Generierung läuft live über die Claude API</span>
+    <span>Native Apps &amp; Hosting → zusätzliche Build-Pipeline</span>
+  </footer>
+</div>
+
+<script>
+const LOG_STEPS = [
+  "Anforderung wird analysiert…",
+  "Komponentenstruktur wird geplant…",
+  "Layout wird generiert…",
+  "Styles werden angewendet…",
+  "Code wird zusammengesetzt…",
+];
+
+const SYSTEM_PROMPT = `Du bist ein Code-Generator innerhalb einer KI-Plattform, die aus Kundenbeschreibungen automatisch Websites erstellt.
+Erzeuge eine vollständige, eigenständige HTML-Seite (inkl. <style> im <head>, kein externes JS nötig außer optional kleinen Vanilla-JS-Snippets in <script>).
+Anforderungen:
+- Antworte AUSSCHLIESSLICH mit dem rohen HTML-Code, beginnend mit <!DOCTYPE html>. Kein Markdown, keine Backticks, keine Erklärung davor oder danach.
+- Mache das Design hochwertig, modern und responsiv (Flexbox/Grid, vernünftige Typografie, Farbpalette passend zum Thema).
+- Verwende echte, thematisch passende Platzhalter-Inhalte (keine "Lorem Ipsum").
+- Nutze System-Fonts oder Google Fonts via <link>.
+- Füge realistische Sektionen ein (z.B. Header, Hero, Inhalt, Footer) je nach Anfrage.
+- Halte den Code kompakt aber vollständig funktionsfähig.`;
+
+const FALLBACK_HTML = (topic) => `<!DOCTYPE html>
+<html lang="de"><head><meta charset="UTF-8">
+<style>
+  body{margin:0;font-family:system-ui,sans-serif;background:#fdfaf5;color:#222;}
+  header{padding:40px 24px;text-align:center;background:#1A1A1A;color:#fff;}
+  header h1{margin:0;font-size:28px;}
+  section{max-width:640px;margin:0 auto;padding:32px 24px;}
+  .badge{display:inline-block;background:#FF7A33;color:#1A1A1A;padding:6px 14px;border-radius:20px;font-size:13px;margin-bottom:12px;}
+  footer{padding:20px;text-align:center;color:#888;font-size:13px;}
+</style></head>
+<body>
+  <header><div class="badge">Beispiel-Vorschau (kein API-Key eingegeben)</div><h1>${topic}</h1></header>
+  <section>
+    <p>Das ist eine statische Beispielausgabe, damit du das Prinzip siehst. Trag oben einen echten Anthropic API-Key ein, um eine tatsächlich von Claude live generierte Seite für deine Eingabe zu erhalten.</p>
+  </section>
+  <footer>Erstellt mit Forge</footer>
+</body></html>`;
+
+const els = {
+  input: document.getElementById('userInput'),
+  apiKey: document.getElementById('apiKey'),
+  generateBtn: document.getElementById('generateBtn'),
+  emptyState: document.getElementById('emptyState'),
+  loadingState: document.getElementById('loadingState'),
+  errorState: document.getElementById('errorState'),
+  errorDetail: document.getElementById('errorDetail'),
+  retryBtn: document.getElementById('retryBtn'),
+  resultWrap: document.getElementById('resultWrap'),
+  logList: document.getElementById('logList'),
+  previewFrame: document.getElementById('previewFrame'),
+  codeBlock: document.getElementById('codeBlock'),
+  codeContent: document.getElementById('codeContent'),
+  viewPreviewBtn: document.getElementById('viewPreviewBtn'),
+  viewCodeBtn: document.getElementById('viewCodeBtn'),
+  deviceDesktopBtn: document.getElementById('deviceDesktopBtn'),
+  deviceMobileBtn: document.getElementById('deviceMobileBtn'),
+  deviceFrame: document.getElementById('deviceFrame'),
+};
+
+let logInterval = null;
+let lastText = "";
+
+function showOnly(stateEl) {
+  [els.emptyState, els.loadingState, els.errorState, els.resultWrap].forEach(el => el.classList.add('hidden'));
+  stateEl.classList.remove('hidden');
+}
+
+function renderLog(activeIndex) {
+  els.logList.innerHTML = LOG_STEPS.map((step, i) => {
+    let color = '#6B7280', mark = '·', opacity = 0.25;
+    if (i < activeIndex) { color = '#3DDC97'; mark = '✓'; opacity = 1; }
+    else if (i === activeIndex) { color = '#FF7A33'; mark = '→'; opacity = 1; }
+    return `<div class="log-item" style="color:${color};opacity:${opacity}">${mark} ${step}</div>`;
+  }).join('');
+}
+
+async function generate(text) {
+  text = (text || els.input.value).trim();
+  if (!text) return;
+  lastText = text;
+
+  showOnly(els.loadingState);
+  let idx = 0;
+  renderLog(0);
+  clearInterval(logInterval);
+  logInterval = setInterval(() => {
+    if (idx < LOG_STEPS.length - 1) { idx++; renderLog(idx); }
+  }, 900);
+
+  const apiKey = els.apiKey.value.trim();
+
+  try {
+    let html;
+    if (!apiKey) {
+      await new Promise(r => setTimeout(r, 2200));
+      html = FALLBACK_HTML(text.length > 60 ? text.slice(0, 60) + '…' : text);
+    } else {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 4000,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: `Erstelle die Website für folgende Anforderung:\n\n${text}` }],
+        }),
+      });
+
+      if (!response.ok) {
+        const errBody = await response.text();
+        throw new Error(`API-Fehler ${response.status}: ${errBody.slice(0, 200)}`);
+      }
+
+      const data = await response.json();
+      const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text);
+      html = textBlocks.join('\n').trim();
+      html = html.replace(/^```(?:html)?/i, '').replace(/```$/, '').trim();
+
+      if (!html.toLowerCase().includes('<html')) {
+        throw new Error('Die KI hat keinen gültigen HTML-Code zurückgegeben.');
+      }
+    }
+
+    clearInterval(logInterval);
+    renderLog(LOG_STEPS.length);
+    await new Promise(r => setTimeout(r, 350));
+
+    els.previewFrame.srcdoc = html;
+    els.codeContent.textContent = html;
+    showOnly(els.resultWrap);
+    setView('preview');
+  } catch (err) {
+    clearInterval(logInterval);
+    els.errorDetail.textContent = err.message || 'Unbekannter Fehler bei der Generierung.';
+    showOnly(els.errorState);
+  }
+}
+
+function setView(view) {
+  if (view === 'preview') {
+    els.previewFrame.classList.remove('hidden');
+    els.deviceFrame.classList.remove('hidden');
+    els.codeBlock.classList.add('hidden');
+    els.viewPreviewBtn.classList.add('active');
+    els.viewCodeBtn.classList.remove('active');
+  } else {
+    els.previewFrame.classList.add('hidden');
+    els.deviceFrame.classList.add('hidden');
+    els.codeBlock.classList.remove('hidden');
+    els.viewPreviewBtn.classList.remove('active');
+    els.viewCodeBtn.classList.add('active');
+  }
+}
+
+els.generateBtn.addEventListener('click', () => generate());
+els.input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) generate();
+});
+document.querySelectorAll('.example-chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    els.input.value = btn.dataset.text;
+    generate(btn.dataset.text);
+  });
+});
+els.retryBtn.addEventListener('click', () => generate(lastText));
+els.viewPreviewBtn.addEventListener('click', () => setView('preview'));
+els.viewCodeBtn.addEventListener('click', () => setView('code'));
+els.deviceDesktopBtn.addEventListener('click', () => {
+  els.deviceFrame.classList.remove('mobile');
+  els.deviceDesktopBtn.classList.add('active');
+  els.deviceMobileBtn.classList.remove('active');
+});
+els.deviceMobileBtn.addEventListener('click', () => {
+  els.deviceFrame.classList.add('mobile');
+  els.deviceMobileBtn.classList.add('active');
+  els.deviceDesktopBtn.classList.remove('active');
+});
+</script>
+</body>
+</html>
